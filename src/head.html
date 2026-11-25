@@ -63,6 +63,8 @@ button:focus-visible,summary:focus-visible{outline:2px solid var(--led);outline-
 .stamp.show{animation:stampIn var(--dur,1100ms) cubic-bezier(.2,.9,.25,1) both}
 @keyframes stampIn{0%{opacity:0;transform:scale(1.8)}10%{opacity:1;transform:scale(1)}82%{opacity:1}100%{opacity:0}}
 .hud{position:absolute;top:8px;right:8px;display:flex;gap:6px;z-index:6}
+/* during a cut-in the art fills the frame and characters sit right: move the buttons to the top-left */
+.stage.ci-on .hud{right:auto;left:8px}
 .iconbtn{background:rgba(6,11,9,.75);border:1px solid var(--line);border-radius:8px;padding:4px 9px;font-size:12px}
 
 /* cut-ins */
@@ -82,7 +84,7 @@ button:focus-visible,summary:focus-visible{outline:2px solid var(--led);outline-
 /* big-vision frame for hits */
 .cutin.vision{background:radial-gradient(ellipse at 50% 30%,#18221d,#030504)}
 .cutin.vision .ci-img{inset:11% 9% 21% 9%;border-radius:4px;box-shadow:0 0 0 6px #0b0f0d,0 0 0 9px #2a302c,0 0 40px rgba(255,200,120,.25);animation:ciIn .34s cubic-bezier(.2,.9,.2,1) both}
-.cutin.vision::before{content:"YOMIDAMA BIG VISION";position:absolute;left:9%;top:3.5%;font-family:var(--f-led);color:var(--led);font-size:clamp(10px,2.2cqw,14px);letter-spacing:.2em}
+.cutin.vision::before{content:"YOMIDAMA BIG VISION";position:absolute;right:9%;top:3.5%;font-family:var(--f-led);color:var(--led);font-size:clamp(10px,2.2cqw,14px);letter-spacing:.2em}
 .cutin.vision::after{content:"";position:absolute;inset:0;background:radial-gradient(circle,rgba(255,255,255,.07) 1px,transparent 1.5px) 0 0/6px 6px;pointer-events:none}
 .cutin.vision .ci-text{bottom:4%;font-family:var(--f-led);-webkit-text-stroke:0;color:var(--led);text-shadow:0 0 14px rgba(255,181,71,.7);transform:none}
 .cutin.vision.big .ci-text{top:auto;bottom:3%;margin:0;color:var(--hit);font-family:var(--f-display);text-shadow:0 0 22px rgba(255,212,71,.8);font-size:clamp(34px,11cqw,84px)}

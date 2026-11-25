@@ -280,7 +280,7 @@ const CI_SND={c06_impact:sc=>{if(sc.text==='ファウル'){sFoul();sCrowd(.25,.6
   c10_walk:()=>sCrowd(.25,1),c11_grounder:()=>{sMitt(false);sCrowd(.65,1);},c12_fly:()=>{sMitt(false);sCrowd(.65,1);},c13_bunt:()=>sFoul(),c14_slide:()=>sWhoosh(.5),c15_out:()=>sCrowd(.5,1.2),c16_safe:()=>sCrowd(.6,1.3),c17_dp:()=>sCrowd(.6,1.4),c18_celebrate:()=>sCrowd(1,3)};
 function waitTap(ms){return new Promise(res=>{const el=$('cutin');let done=false;const fin=()=>{if(done)return;done=true;el.onclick=null;clearTimeout(t);res();};const t=setTimeout(fin,ms);el.onclick=fin;});}
 async function playScenes(scenes,ctx){
-  const el=$('cutin');
+  const el=$('cutin');$('stage').classList.add('ci-on');
   for(const sc of scenes){
     el.className='cutin'+(sc.vision?' vision':'')+(sc.big?' big':'');el.hidden=false;
     $('ciImg').style.backgroundImage=`url("${img(sc.img)}")`;
@@ -289,16 +289,16 @@ async function playScenes(scenes,ctx){
     (CI_SND[sc.img]||(()=>{}))({...sc,k:ctx&&ctx.k});
     await waitTap(sc.big?1500:sc.text?1150:800);
   }
-  el.hidden=true;
+  el.hidden=true;$('stage').classList.remove('ci-on');
 }
 
 async function showRuns(n,bt){
-  const el=$('cutin');el.className='cutin big score';el.hidden=false;
+  const el=$('cutin');el.className='cutin big score';el.hidden=false;$('stage').classList.add('ci-on');
   $('ciImg').style.backgroundImage=`url("${img('bg')}")`;
   const T=G.teams[bt],tx=$('ciText');tx.className='ci-text';
   tx.innerHTML=`<div class="sc-team" style="color:${uiColor(T.color)}">${esc(T.short)}</div>${n}点！<div class="sc">${esc(G.teams[0].short)} ${G.score[0]} - ${G.score[1]} ${esc(G.teams[1].short)}</div>`;
   [...el.children].forEach(c=>{c.style.animation='none';void c.offsetWidth;c.style.animation='';});
-  sCrowd(.9,2);await waitTap(2000);el.hidden=true;}
+  sCrowd(.9,2);await waitTap(2000);el.hidden=true;$('stage').classList.remove('ci-on');}
 /* ---------- bottom sheet ---------- */
 function dockShow(full){const d=$('dock');d.classList.remove('away','min');d.classList.toggle('full',!!full);$('grab').textContent='中継を見る';$('grab').setAttribute('aria-expanded','true');d.scrollTop=0;
   if(!full)$('foot').innerHTML='';
