@@ -47,6 +47,7 @@ function teamRanks(T){return `打${RANK(avg(T.lineup,'con'))} 長${RANK(avg(T.li
 function teamBtn(i,side,dis){const T=TEAMS[i];return `<button type="button" id="tm-${side}-${i}" data-i="${i}" style="--tc:${uiColor(T.color)}" aria-pressed="${cfg.teamIds[side]===i}" ${dis?'disabled':''}><b>${esc(T.name)}</b><small>${T.tag}</small><span class="rk">${teamRanks(T)}</span></button>`;}
 function humanSides(){return cfg.mode==='2p'?[0,1]:[cfg.side];}
 function renderSetup(){
+  setTimeout(renderResume);
   if(cfg.mode==='tour'||cfg.mode==='league'){$('setupBody').innerHTML=seasonSetupHTML();bindSeasonSetup();$('startBtn').textContent=cfg.mode==='tour'?'抽選して大会を始める':'日程を組んで大会を始める';return;}
   $('startBtn').textContent='次へ';
   if(![1,3,9].includes(cfg.innings))cfg.innings=3;
@@ -78,7 +79,7 @@ $('startBtn').onclick=()=>{audioInit();
   $('setup').hidden=true;
   if(cpuT>=0)showScout(true);else beginGame();};
 $('sndBtn').onclick=()=>{SND.on=!SND.on;if(SND.on)audioInit();$('sndBtn').textContent=SND.on?'音 ON':'音 OFF';if(SND.amb)SND.amb.gain.value=SND.on?.018:0;};
-$('quitBtn').onclick=()=>{if(G&&G.busy)return;$('app').hidden=true;if(G&&G.sgid!=null&&SEASON)return showHub('試合を中断しました。この試合は最初からやり直しになります。');$('setup').hidden=false;renderSetup();};
+$('quitBtn').onclick=()=>{if(G&&G.busy)return;saveLive();$('app').hidden=true;$('setup').hidden=false;renderSetup();};
 async function beginGame(){$('scout').hidden=true;$('app').hidden=false;$('endOv').hidden=true;renderBoard();
   dockShow();$('memo').hidden=true;$('panel').innerHTML='<p class="loading">球場を準備しています…</p>';
   await prepareArt();stageSet('set','stance');
@@ -97,7 +98,7 @@ const shuffle=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math
 function pname(t){return SEASON.pn[t]||'CPU';}
 function seasonSetupHTML(){
   const saved=loadSeason();
-  const resume=saved&&!saved.done?`<div class="news">保存された${saved.type==='tour'?'トーナメント':'総当たり'}（${saved.innings}回制）があります（${saved.games.filter(g=>g.res).length}/${saved.games.length}試合済み）。<div class="row" style="margin-top:6px"><button class="ghost" id="resumeBtn" type="button">続きから</button><button class="ghost" id="discardBtn" type="button">破棄する</button></div></div>`:'';
+  const resume=saved&&!saved.done?`<div class="news">保存された${saved.type==='tour'?'トーナメント':'総当たり'}（${saved.innings}回制）があります（${saved.games.filter(g=>g.res).length}/${saved.games.length}試合済み）。<div class="row" style="margin-top:6px"><button class="ghost" id="liveBtn" type="button">続きから</button><button class="ghost" id="discardBtn" type="button">破棄する</button></div></div>`:'';
   const si=cfg.seasonInn[cfg.mode],ng=cfg.mode==='tour'?5:15;
   const inn=`<div class="field"><span class="label">イニング</span><div class="seg" id="segTInn">${[[3,'約10分'],[7,'約20分'],[9,'約30分']].map(([n,t])=>`<button type="button" id="ti-${n}" data-v="${n}" aria-pressed="${si===n}">${n}回<small>1試合 ${t}</small></button>`).join('')}</div>
     <p class="note">${cfg.mode==='tour'?'全5試合。引き分けなしで、決着までタイブレークを続けます。':'6チームが1試合ずつ戦う全15試合。引き分けありです。'}時間は人が操作する試合1つの目安です（CPU同士の試合は一瞬で終わります）。</p></div>`;
@@ -313,8 +314,33 @@ function dockAway(){$('dock').classList.add('away');}
 $('grab').onclick=()=>{const d=$('dock');const m=d.classList.toggle('min');$('grab').textContent=m?'選択に戻る':'中継を見る';$('grab').setAttribute('aria-expanded',String(!m));};
 /* ---------- flow ---------- */
 function say(msg){news.push(msg);}
+
+/* ===== 中断セーブ：1球ごとに試合を端末へ保存し、再読み込みや誤操作で消えても続きから再開できる ===== */
+function packG(root){const ids=new Map(),out=[];const enc=v=>{if(v===null||typeof v!=='object')return typeof v==='function'?undefined:v;
+  if(ids.has(v))return {$r:ids.get(v)};const id=out.length;ids.set(v,id);out.push(null);
+  out[id]=Array.isArray(v)?v.map(enc):Object.fromEntries(Object.entries(v).map(([k,x])=>[k,enc(x)]));return {$r:id};};enc(root);return out;}
+function unpackG(out){const objs=out.map(o=>Array.isArray(o)?[]:{});const dec=v=>(v&&typeof v==='object'&&'$r' in v)?objs[v.$r]:v;
+  out.forEach((o,i)=>{if(Array.isArray(o))o.forEach(x=>objs[i].push(dec(x)));else Object.entries(o).forEach(([k,x])=>objs[i][k]=dec(x));});return objs[0];}
+function saveLive(){if(!G)return;try{localStorage.setItem('ymd_live',JSON.stringify({v:1,at:Date.now(),cfg,g:packG(G)}));}catch(e){}}
+function clearLive(){try{localStorage.removeItem('ymd_live');}catch(e){}}
+function loadLive(){try{const s=JSON.parse(localStorage.getItem('ymd_live')||'null');if(!s||s.v!==1)return null;
+  if(s.cfg.fromSeason){const S=loadSeason();const gid=s.g&&unpackG(s.g).sgid;if(!S||gid==null||!S.games[gid]||S.games[gid].res)return null;}return s;}catch(e){return null;}}
+function renderResume(){const box=$('resumeBox');if(!box)return;const s=loadLive();if(!s){box.hidden=true;box.innerHTML='';return;}
+  const g=unpackG(s.g),t=g.teams;
+  box.innerHTML=`<div class="resume"><span class="label">中断した試合があります</span><div class="s">${esc(t[0].short)} ${g.score[0]} - ${g.score[1]} ${esc(t[1].short)}　${g.inning}回${g.half?'裏':'表'}・${g.outs}アウト${s.cfg.fromSeason?'（大会の試合）':''}</div>
+  <div class="row"><button class="go" id="liveBtn" type="button">続きから</button><button class="ghost" id="liveDrop" type="button">破棄する</button></div></div>`;box.hidden=false;
+  $('liveDrop').onclick=()=>{clearLive();renderResume();};
+  $('liveBtn').onclick=()=>resumeLive(s);}
+async function resumeLive(s){audioInit();Object.assign(cfg,s.cfg);G=unpackG(s.g);G.busy=false;
+  if(cfg.fromSeason){SEASON=loadSeason();}
+  $('setup').hidden=true;$('hub').hidden=true;$('scout').hidden=true;$('endOv').hidden=true;$('app').hidden=false;
+  renderBoard();dockShow();$('memo').hidden=true;$('panel').innerHTML='<p class="loading">球場を準備しています…</p>';
+  await prepareArt();stageSet('set','stance');renderBoard();
+  $('panel').innerHTML=`<div class="result"><div class="label">試合再開</div>${scoreline(`${G.score[0]} - ${G.score[1]}`)}<div class="s">${G.inning}回${G.half?'裏':'表'}・${G.outs}アウト${G.bases.some(Boolean)?'・走者 '+['一','二','三'].filter((_,i)=>G.bases[i]).join('')+'塁':''}</div></div><button class="go" id="pbBtn" type="button">再開する</button>`;
+  $('pbBtn').focus();$('pbBtn').onclick=()=>{$('pbBtn').disabled=true;dockAway();nextPitch();};}
 async function nextPitch(){
   if(G.over)return showEnd();
+  saveLive();
   sel={};pending={};$('tvPitch').hidden=true;
   const freshPA=G.ab.pitches.length===0&&G.ab.pickoffs===0&&!G.ab.prepped;
   if(freshPA){G.ab.prepped=true;
@@ -484,7 +510,7 @@ async function reveal(){
   sFlip();dockShow();
   const prevMarks=ST.marks.slice();
   ST.freeze={P,b,order:(T_bat(G).bIdx%9)+1};
-  const ev=applyResult(G,pitch,act,res);
+  const ev=applyResult(G,pitch,act,res);if(!ev.halfOver)saveLive();
   if(pitch.kind==='pitch')P.np=(P.np||0)+1;
   await sleep(900);dockAway();
   /* on-field animation */
@@ -512,7 +538,7 @@ async function reveal(){
   const nb=$('nextBtn');nb.hidden=false;nb.textContent=G.over?'試合結果へ':ev.halfOver?'攻守交代':'次の球へ';
   G.busy=false;nb.focus();
   nb.onclick=()=>{if(G.over)return showEnd();
-    if(ev.halfOver){const done=`${G.inning}回${G.half?'裏':'表'}`;nextHalf(G);if(G.over)return showEnd();ST.marks=[];halfBreak(done);}else nextPitch();};
+    if(ev.halfOver){const done=`${G.inning}回${G.half?'裏':'表'}`;nextHalf(G);saveLive();if(G.over)return showEnd();ST.marks=[];halfBreak(done);}else nextPitch();};
 }
 function scoreline(mid){const t=G.teams;const tm=i=>`<div class="sl-tm" style="color:${uiColor(t[i].color)}">${esc(t[i].short)}<small>${esc(who(i))}</small></div>`;
   return `<div class="scoreline">${tm(0)}<div class="sl-sc">${mid}</div>${tm(1)}</div>`;}
@@ -568,7 +594,7 @@ function drawLot(){
 }
 /* ---------- end ---------- */
 function showEnd(){
-  renderBoard();const s=G.score,t=G.teams;
+  clearLive();renderBoard();const s=G.score,t=G.teams;
   if(G.lot!=null&&!G.lotShown)return drawLot();
   let head;if(G.lot!=null){const w=G.lot;head=`抽選で${esc(t[w].short)}${both()?'（'+esc(who(w))+'）':''}の勝ち${!both()?(isHuman(w)?' ・勝ち上がり':' ・敗退'):''}`;}
   else if(G.draw||s[0]===s[1])head='引き分け';else{const w=s[0]>s[1]?0:1;head=!both()?(isHuman(w)?'勝利！':'敗戦'):`${who(w)}（${t[w].short}）の勝ち`;}

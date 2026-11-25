@@ -280,6 +280,9 @@ details.memo summary small{color:var(--muted);font-weight:400;margin-left:6px}
 .tbl tr.gone td{opacity:.5}.badge.off{border-color:var(--muted);color:var(--muted)}
 .scout-now{margin:2px 0 6px;font-size:15px}.scout-now b{font-size:18px;color:var(--led)}
 .dock.full.min{max-height:calc(44px + env(safe-area-inset-bottom,0px));overflow:hidden;top:auto!important;border-radius:14px 14px 0 0}
+.resume{border:1px solid var(--led);border-radius:12px;padding:10px 12px;background:var(--led-dim);display:flex;flex-direction:column;gap:8px}
+.resume .s{font-size:13px;color:var(--chalk)}.resume .row{display:flex;gap:8px}.resume .row button{flex:1}
+html,body{overscroll-behavior-y:none}
 .tbl td.n{font-family:var(--f-led);color:var(--muted)}
 .heat{display:grid;grid-template-columns:repeat(2,minmax(0,92px));gap:4px;font-size:12px}
 .heat div{border:1px solid var(--line);border-radius:6px;padding:6px;text-align:center}
@@ -345,6 +348,7 @@ details.memo summary small{color:var(--muted);font-weight:400;margin-left:6px}
       <div class="logo">ヨミ<span>ダマ</span></div>
       <p class="lede">一球ずつカードを伏せて同時にめくる。配球と狙い球を読み合う野球です。</p>
     </div>
+    <div id="resumeBox" hidden></div>
     <div class="field"><span class="label">モード</span>
       <div class="seg" id="segMode">
         <button type="button" id="m-cpu" data-v="cpu" aria-pressed="true">CPUと対戦<small>1人で遊ぶ</small></button>
