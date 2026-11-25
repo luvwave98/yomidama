@@ -493,11 +493,11 @@ function applyResult(g,pitch,act,res){
 }
 
 /* ---------- inning flow ---------- */
-function maxInning(g){return g.cfg.noDraw?30:(g.cfg.innings===9?12:g.cfg.innings+3);}
+function maxInning(g){return g.cfg.noDraw?15:(g.cfg.innings===9?12:g.cfg.innings+3);}
 function nextHalf(g){const n=g.cfg.innings;
   g.outs=0;g.balls=0;g.strikes=0;g.bases=[null,null,null];g.ab={pitches:[],pickoffs:0};
   if(g.half===0){if(g.inning>=n&&g.score[1]>g.score[0]){g.line[1][g.inning-1]='X';g.over=true;return;}g.half=1;g.line[1][g.inning-1]=0;}
-  else{if(g.inning>=n&&g.score[0]!==g.score[1]){g.over=true;return;}if(g.inning>=maxInning(g)){g.over=true;g.draw=true;return;}g.inning++;g.half=0;g.line[0][g.inning-1]=0;}
+  else{if(g.inning>=n&&g.score[0]!==g.score[1]){g.over=true;return;}if(g.inning>=maxInning(g)){g.over=true;g.draw=true;if(g.cfg.noDraw)g.lot=R()<.5?0:1;return;}g.inning++;g.half=0;g.line[0][g.inning-1]=0;}
   g.teams.forEach(T=>T.cur.retired=false);
   if(g.inning>n){g.tiebreak=true;const T=T_bat(g);const prev=T.order[(T.bIdx+8)%9];g.bases[1]=prev;}
 }

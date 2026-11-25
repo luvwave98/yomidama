@@ -130,7 +130,7 @@ function standings(){const st=TEAMS.map((T,i)=>({i,g:0,w:0,l:0,d:0,rs:0,ra:0}));
   return st.sort((x,y)=>y.pct-x.pct||(y.rs-y.ra)-(x.rs-x.ra)||y.rs-x.rs);}
 function teamCell(t,r){if(t==null)return `<span class="t${r?' r':''} tbd">未定</span>`;return `<span class="t${r?' r':''}"><b style="color:${TEAMS[t].color}">${esc(TEAMS[t].short)}</b><small>${esc(pname(t))}</small></span>`;}
 function gameRow(g,next){const a=slotTeam(g.away),h=slotTeam(g.home);const r=g.res;
-  const sc=r?`${r.score[0]} - ${r.score[1]}${r.ex?`<small style="font-size:10px">（${r.ex}回）</small>`:''}`:'vs';
+  const sc=r?`${r.score[0]} - ${r.score[1]}${r.ex?`<small style="font-size:10px">（${r.ex}回${r.lot?'・抽選':''}）</small>`:''}`:'vs';
   return `<div class="gm${next?' next':''}"><span class="rd">${g.rd}</span><span class="${r&&r.win===a?'w':''}">${teamCell(a)}</span><span class="sc">${sc}</span><span class="${r&&r.win===h?'w':''}">${teamCell(h,1)}</span></div>`;}
 function showHub(msg){
   $('app').hidden=true;$('endOv').hidden=true;$('setup').hidden=true;
@@ -154,9 +154,9 @@ function showHub(msg){
 }
 function recordSeason(gid,g){const gm=SEASON.games[gid];const sc=[...g.score];
   gm.away=slotTeam(gm.away);gm.home=slotTeam(gm.home);
-  let win=sc[0]>sc[1]?gm.away:sc[1]>sc[0]?gm.home:null;
-  if(SEASON.type==='tour'&&win==null)win=gm.home;
-  gm.res={score:sc,win,ex:g.inning>g.cfg.innings?g.inning:0};saveSeason();}
+  let win=sc[0]>sc[1]?gm.away:sc[1]>sc[0]?gm.home:null,lot=false;
+  if(SEASON.type==='tour'&&win==null){lot=true;win=g.lot===0?gm.away:g.lot===1?gm.home:(Math.random()<.5?gm.away:gm.home);}
+  gm.res={score:sc,win,lot,ex:g.inning>g.cfg.innings?g.inning:0};saveSeason();}
 function playSeasonGame(ng){
   const a=slotTeam(ng.away),h=slotTeam(ng.home),S=SEASON;
   const base={innings:S.innings,teamIds:[a,h],noDraw:S.type==='tour',colors:matchColors(a,h)};
@@ -550,10 +550,25 @@ function renderMemo(role){
   $('memoTabs').onclick=e=>{const b=e.target.closest('button');if(!b)return;memoTab=+b.dataset.i;renderMemo(role);};
 }
 
+/* ---------- lottery after 15 tied innings (tournament) ---------- */
+function drawLot(){
+  renderBoard();const t=G.teams;
+  $('endSheet').innerHTML=`<span class="label">試合終了</span><h2 class="big-h">延長15回 決着つかず</h2>
+   ${scoreline(`${G.score[0]} - ${G.score[1]}`)}<p class="lede">規定により、くじ引きで勝ち上がるチームを決めます。</p>
+   <div class="champ" id="lotBox" aria-live="polite"><div class="label">くじ引き</div><div class="h" id="lotName">？</div></div>
+   <button class="go" id="lotBtn" type="button">くじを引く</button>`;
+  $('endOv').hidden=false;$('lotBtn').focus();
+  $('lotBtn').onclick=async()=>{$('lotBtn').disabled=true;const el=$('lotName');sWhoosh(1.2);
+    for(let i=0;i<14;i++){const k=i%2;el.textContent=t[k].short;el.style.color=uiColor(t[k].color);await sleep(60+i*12);}
+    const w=G.lot;el.textContent=t[w].short;el.style.color=uiColor(t[w].color);sCrowd(1,2.4);$('lotBox').querySelector('.label').textContent='勝ち上がり';
+    await sleep(1400);G.lotShown=true;showEnd();};
+}
 /* ---------- end ---------- */
 function showEnd(){
   renderBoard();const s=G.score,t=G.teams;
-  let head;if(G.draw||s[0]===s[1])head='引き分け';else{const w=s[0]>s[1]?0:1;head=!both()?(isHuman(w)?'勝利！':'敗戦'):`${who(w)}（${t[w].short}）の勝ち`;}
+  if(G.lot!=null&&!G.lotShown)return drawLot();
+  let head;if(G.lot!=null){const w=G.lot;head=`抽選で${esc(t[w].short)}${both()?'（'+esc(who(w))+'）':''}の勝ち${!both()?(isHuman(w)?' ・勝ち上がり':' ・敗退'):''}`;}
+  else if(G.draw||s[0]===s[1])head='引き分け';else{const w=s[0]>s[1]?0:1;head=!both()?(isHuman(w)?'勝利！':'敗戦'):`${who(w)}（${t[w].short}）の勝ち`;}
   const n=Math.max(G.cfg.innings,G.inning),cols=[...Array(n).keys()];
   const ls=`<div class="ls-wrap"><table class="ls"><thead><tr><th></th>${cols.map(i=>`<th>${i+1}</th>`).join('')}<th>R</th><th>H</th></tr></thead><tbody>${[0,1].map(k=>`<tr><td class="tn"><i style="background:${uiColor(t[k].color)}"></i>${t[k].short}</td>${cols.map(i=>`<td>${G.line[k][i]??''}</td>`).join('')}<td class="rh">${s[k]}</td><td class="rh">${G.hits[k]}</td></tr>`).join('')}</tbody></table></div>`;
   const st=(lab,f)=>`<tr><td>${lab}</td><td>${f(t[0])}</td><td>${f(t[1])}</td></tr>`;
