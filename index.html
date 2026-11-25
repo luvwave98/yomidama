@@ -87,7 +87,7 @@ button:focus-visible,summary:focus-visible{outline:2px solid var(--led);outline-
 .cutin .ci-lines{position:absolute;inset:0;background:repeating-conic-gradient(from 0deg at 50% 50%,rgba(255,255,255,.0) 0deg 3.2deg,rgba(255,255,255,.22) 3.4deg 3.8deg);-webkit-mask:radial-gradient(circle at 50% 50%,transparent 38%,#000 72%);mask:radial-gradient(circle at 50% 50%,transparent 38%,#000 72%);mix-blend-mode:screen;opacity:0;animation:ciLines .9s ease-out both}
 .cutin.big .ci-lines{opacity:1}
 .cutin .ci-flash{position:absolute;inset:0;background:#fff;opacity:0;animation:ciFlash .28s ease-out both}
-.cutin .ci-text{position:absolute;left:0;right:0;bottom:9%;text-align:center;font-family:var(--f-display);font-size:clamp(28px,10cqw,76px);line-height:1;color:#fff;paint-order:stroke fill;-webkit-text-stroke:9px rgba(5,9,7,.95);transform:rotate(-3deg);animation:ciText .5s cubic-bezier(.2,1.4,.3,1) .12s both}
+.cutin .ci-text{white-space:nowrap;position:absolute;left:0;right:0;bottom:9%;text-align:center;font-family:var(--f-display);font-size:clamp(28px,10cqw,76px);line-height:1;color:#fff;paint-order:stroke fill;-webkit-text-stroke:9px rgba(5,9,7,.95);transform:rotate(-3deg);animation:ciText .5s cubic-bezier(.2,1.4,.3,1) .12s both}
 .cutin.big .ci-text{font-size:clamp(36px,14cqw,110px);color:var(--hit);bottom:auto;top:50%;margin-top:-.5em}
 .cutin .ci-text.red{color:#ff6b5e}.cutin .ci-text.green{color:#7ef0a8}
 @keyframes ciIn{0%{clip-path:polygon(0 0,0 0,0 100%,0 100%);transform:scale(1.12)}100%{clip-path:polygon(0 0,100% 0,100% 100%,0 100%);transform:scale(1.03)}}
@@ -1348,6 +1348,8 @@ async function playScenes(scenes,ctx){
     el.className='cutin'+(sc.vision?' vision':'')+(sc.big?' big':'');el.hidden=false;
     $('ciImg').style.backgroundImage=`url("${img(sc.img)}")`;
     const tx=$('ciText');tx.textContent=sc.text||'';tx.className='ci-text'+(sc.text==='アウト！'?' red':sc.text==='セーフ！'?' green':'');
+    /* keep the caption on one line: shrink long words so they fit about 88% of the frame width */
+    {const n=[...(sc.text||'')].length||1,base=sc.big?(sc.vision?11:14):10;tx.style.fontSize=`clamp(18px,${Math.min(base,88/n).toFixed(2)}cqw,110px)`;}
     [...el.children].forEach(c=>{c.style.animation='none';void c.offsetWidth;c.style.animation='';});
     (CI_SND[sc.img]||(()=>{}))({...sc,k:ctx&&ctx.k});
     await waitTap(sc.big?1500:sc.text?1150:800);

@@ -285,6 +285,8 @@ async function playScenes(scenes,ctx){
     el.className='cutin'+(sc.vision?' vision':'')+(sc.big?' big':'');el.hidden=false;
     $('ciImg').style.backgroundImage=`url("${img(sc.img)}")`;
     const tx=$('ciText');tx.textContent=sc.text||'';tx.className='ci-text'+(sc.text==='アウト！'?' red':sc.text==='セーフ！'?' green':'');
+    /* keep the caption on one line: shrink long words so they fit about 88% of the frame width */
+    {const n=[...(sc.text||'')].length||1,base=sc.big?(sc.vision?11:14):10;tx.style.fontSize=`clamp(18px,${Math.min(base,88/n).toFixed(2)}cqw,110px)`;}
     [...el.children].forEach(c=>{c.style.animation='none';void c.offsetWidth;c.style.animation='';});
     (CI_SND[sc.img]||(()=>{}))({...sc,k:ctx&&ctx.k});
     await waitTap(sc.big?1500:sc.text?1150:800);
