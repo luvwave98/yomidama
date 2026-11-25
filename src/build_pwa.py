@@ -32,7 +32,13 @@ html=f'''<!doctype html>
 {bodypart}
 <script>
 if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost')){{
-  window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{{}}));}}
+  window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js',{{updateViaCache:'none'}}).then(reg=>{{
+    const chk=()=>reg.update().catch(()=>{{}});document.addEventListener('visibilitychange',()=>{{if(!document.hidden)chk();}});setInterval(chk,30*60*1000);}}).catch(()=>{{}}));
+  /* a new version took over: reload once, but only on the title screen so a game in progress is never cut off */
+  const had=!!navigator.serviceWorker.controller;let pend=false;
+  const tryReload=()=>{{const s=document.getElementById('setup');if(s&&!s.hidden&&!document.getElementById('hub')?.offsetParent){{location.reload();}}else pend=true;}};
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{{if(had)tryReload();}});
+  document.addEventListener('visibilitychange',()=>{{if(pend&&!document.hidden)tryReload();}});}}
 </script>
 </body>
 </html>
@@ -49,13 +55,13 @@ ver=str(int(os.path.getmtime('index.html')))
 sw=f"""/* ヨミダマ service worker: works offline after the first visit */
 const V='yomidama-{ver}';
 const CORE=['./','index.html','manifest.webmanifest','icons/icon-192.png','icons/icon-512.png','icons/icon-maskable-512.png','icons/apple-touch-icon.png','icons/icon-32.png'];
-self.addEventListener('install',e=>{{e.waitUntil(caches.open(V).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting()));}});
+self.addEventListener('install',e=>{{e.waitUntil(caches.open(V).then(c=>c.addAll(CORE.map(x=>new Request(x,{{cache:'reload'}})))).then(()=>self.skipWaiting()));}});
 self.addEventListener('activate',e=>{{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==V).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));}});
 self.addEventListener('fetch',e=>{{
   const r=e.request;if(r.method!=='GET')return;const u=new URL(r.url);
   if(u.origin===location.origin){{
     /* the page itself: network first so updates arrive, cached copy when offline */
-    if(r.mode==='navigate'){{e.respondWith(fetch(r).then(res=>{{const cp=res.clone();caches.open(V).then(c=>c.put('index.html',cp));return res;}}).catch(()=>caches.match('index.html')));return;}}
+    if(r.mode==='navigate'){{e.respondWith(fetch(r.url,{{cache:'no-cache'}}).then(res=>{{const cp=res.clone();caches.open(V).then(c=>c.put('index.html',cp));return res;}}).catch(()=>caches.match('index.html')));return;}}
     e.respondWith(caches.match(r).then(m=>m||fetch(r)));return;}}
   /* web fonts: cached after first use so the game keeps its look offline */
   if(/fonts\\.(googleapis|gstatic)\\.com$/.test(u.hostname)){{

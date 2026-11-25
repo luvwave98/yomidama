@@ -385,7 +385,7 @@ details.memo summary small{color:var(--muted);font-weight:400;margin-left:6px}
       </ol>
     </details>
     <button class="go" id="startBtn" type="button">次へ</button>
-    <p class="credit"><span class="label-name">あさみやソフト</span><br>© 2026 Luv Cuero</p>
+    <p class="credit"><span class="label-name">あさみやソフト</span><br>© 2026 Luv Cuero<br><small class="ver">ver 2026.11.26-0152</small></p>
   </div>
 </div>
 
@@ -1654,7 +1654,13 @@ function showEnd(){
 
 <script>
 if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost')){
-  window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));}
+  window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(reg=>{
+    const chk=()=>reg.update().catch(()=>{});document.addEventListener('visibilitychange',()=>{if(!document.hidden)chk();});setInterval(chk,30*60*1000);}).catch(()=>{}));
+  /* a new version took over: reload once, but only on the title screen so a game in progress is never cut off */
+  const had=!!navigator.serviceWorker.controller;let pend=false;
+  const tryReload=()=>{const s=document.getElementById('setup');if(s&&!s.hidden&&!document.getElementById('hub')?.offsetParent){location.reload();}else pend=true;};
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{if(had)tryReload();});
+  document.addEventListener('visibilitychange',()=>{if(pend&&!document.hidden)tryReload();});}
 </script>
 </body>
 </html>
