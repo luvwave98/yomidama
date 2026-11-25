@@ -184,9 +184,10 @@ function showScout(first){
   const c=cfg.ctl.indexOf('cpu');if(c<0)return;const T=G.teams[c];
   const st=p=>{const tot=p.rep.reduce((a,k)=>a+p.mix[k],0);return p.rep.map(k=>`${PT[k].name} ${Math.round(p.mix[k]/tot*100)}%`).join(' / ');};
   $('scoutSheet').innerHTML=`<span class="label">試合前スカウティングレポート</span><h2 class="big-h">${esc(T.name)}</h2>
+  <p class="scout-now">${first?'先発予定':'いま投げているのは'} <b>${esc(T.cur.name)}</b>（${{SP:'先発',RP:'中継ぎ',CL:'抑え'}[T.cur.role]}・${handJ(T.cur.hand)}投・${T.cur.style}）</p>
   <p class="lede">${esc(T.tag)}：${esc(T.traits)}。チーム評価 ${teamRanks(T)}。過去の対戦データです。試合中の集計はこの資料に上乗せされます。</p>
   <div class="tbl-wrap"><table class="tbl"><thead><tr><th>投手</th><th>役割</th><th>球種の割合</th><th>決め球・傾向</th></tr></thead><tbody>
-  ${T.staff.map(p=>`<tr><td>${esc(p.name)}<br><small class="sub">${handJ(p.hand)}投・${p.style}</small></td><td>${{SP:'先発',RP:'中継ぎ',CL:'抑え'}[p.role]}</td><td>${st(p)}</td><td>${PT[p.wsType].name}<br><small class="sub">${tendText(p)}</small></td></tr>`).join('')}
+  ${[T.cur,...T.staff.filter(p=>p!==T.cur)].map(p=>`<tr class="${p===T.cur?'now':p.out?'gone':''}"><td>${esc(p.name)}${p===T.cur?`<span class="badge">${first?'先発予定':'登板中'}</span>`:p.out?'<span class="badge off">降板</span>':''}<br><small class="sub">${handJ(p.hand)}投・${p.style}</small></td><td>${{SP:'先発',RP:'中継ぎ',CL:'抑え'}[p.role]}</td><td>${st(p)}</td><td>${PT[p.wsType].name}<br><small class="sub">${tendText(p)}</small></td></tr>`).join('')}
   </tbody></table></div>
   <div class="tbl-wrap"><table class="tbl"><thead><tr><th>打順</th><th>打者</th><th>打席</th><th>ミート / パワー / 選球 / 走力</th></tr></thead><tbody>
   ${T.order.map((b,i)=>`<tr><td>${i+1}</td><td>${esc(b.name)}${b.wide?'<span class="badge">広角</span>':''}</td><td>${handJ(b.bats)}</td><td>${RANK(b.con)} / ${RANK(b.pow)} / ${RANK(b.eye)} / ${RANK(b.spd)}</td></tr>`).join('')}
