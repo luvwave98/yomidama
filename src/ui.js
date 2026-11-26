@@ -535,7 +535,7 @@ async function reveal(){
   stageSet('set','stance');renderBoard();
   $('resBox').innerHTML=`<div class="h" style="color:${ev.tone==='hit'?'var(--hit)':ev.k?'var(--led)':'var(--chalk)'}">${esc(ev.head)}</div><div class="s">${esc(b.name)}${ev.sub?' · '+esc(ev.sub):''}</div>`;
   dockShow();
-  const nb=$('nextBtn');nb.hidden=false;nb.textContent=G.over?'試合結果へ':ev.halfOver?'攻守交代':'次の球へ';
+  const nb=$('nextBtn');nb.hidden=false;nb.textContent=G.over?'試合結果へ':ev.halfOver?'チェンジ！':'次の球へ';
   G.busy=false;nb.focus();
   nb.onclick=()=>{if(G.over)return showEnd();
     if(ev.halfOver){const done=`${G.inning}回${G.half?'裏':'表'}`;nextHalf(G);saveLive();if(G.over)return showEnd();ST.marks=[];halfBreak(done);}else nextPitch();};
